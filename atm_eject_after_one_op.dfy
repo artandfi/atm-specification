@@ -89,21 +89,33 @@ class ATM {
         this.entered_pin := -1;
     }
 
-    method EnterPIN(pin: nat)
+    method EnterPIN(pin: nat, card: Card)
         requires IsCardInserted()
-        requires pin == card.pin
-        modifies this
-        ensures IsCardInserted()
+        modifies this, this.card
+        //ensures IsCardInserted()
         ensures this.stored_amount == old(this.stored_amount)
-        ensures this.entered_pin == pin
-        ensures this.card == old(this.card)
+        //ensures this.entered_pin == pin
+        //ensures this.card == old(this.card)
+        ensures card.pin == old(card.pin)
+        ensures card.balance == old(card.balance)
+        ensures card.pin != pin ==> this.card == null
+        ensures card.pin == pin ==> (
+            && this.card == old(this.card)
+            && this.card.balance == old(this.card.balance)
+            && this.card.pin == old(this.card.pin)
+        )
     {
-        this.entered_pin := pin;
+        if card.pin == pin {
+            this.entered_pin := pin;
+        }
+        else {
+            EjectCard();
+        }
     }
 
     method ChangePIN(new_pin: nat, card: Card)
         requires IsCardInserted()
-        requires IsEnteredPINValid()
+        //requires IsEnteredPINValid()
         modifies this, this.card, card
         ensures this.stored_amount == old(this.stored_amount)
         ensures this.card == null
@@ -116,7 +128,7 @@ class ATM {
 
     method Withdraw(amount: nat, card: Card)
         requires IsCardInserted()
-        requires IsEnteredPINValid()
+        //requires IsEnteredPINValid()
         requires IsWithdrawAmountValid(amount, card)
         modifies this, this.card, card
         ensures !IsCardInserted()
@@ -155,21 +167,21 @@ method Main() {
     var card2 := new Card(pin2, balance);
 
     atm.InsertCard(card1);
-    atm.EnterPIN(pin1);
+    atm.EnterPIN(pin1, card1);
     atm.Withdraw(100, card1);
 
     atm.Refill(300);
 
     atm.InsertCard(card2);
-    atm.EnterPIN(pin2);
+    atm.EnterPIN(pin2, card2);
     atm.Withdraw(100, card2);
 
     var new_pin1 := 8888;
     atm.InsertCard(card1);
-    atm.EnterPIN(pin1);
+    atm.EnterPIN(pin1, card1);
     atm.ChangePIN(new_pin1, card1);
 
     atm.InsertCard(card1);
-    atm.EnterPIN(new_pin1);
+    atm.EnterPIN(new_pin1, card1);
     atm.Withdraw(100, card1);
 }
