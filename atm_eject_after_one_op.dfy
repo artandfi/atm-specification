@@ -92,10 +92,7 @@ class ATM {
     method EnterPIN(pin: nat, card: Card)
         requires IsCardInserted()
         modifies this, this.card
-        //ensures IsCardInserted()
         ensures this.stored_amount == old(this.stored_amount)
-        //ensures this.entered_pin == pin
-        //ensures this.card == old(this.card)
         ensures card.pin == old(card.pin)
         ensures card.balance == old(card.balance)
         ensures card.pin != pin ==> this.card == null
@@ -115,7 +112,7 @@ class ATM {
 
     method ChangePIN(new_pin: nat, card: Card)
         requires IsCardInserted()
-        //requires IsEnteredPINValid()
+        requires 0 <= new_pin <= 9999
         modifies this, this.card, card
         ensures this.stored_amount == old(this.stored_amount)
         ensures this.card == null
@@ -128,7 +125,6 @@ class ATM {
 
     method Withdraw(amount: nat, card: Card)
         requires IsCardInserted()
-        //requires IsEnteredPINValid()
         requires IsWithdrawAmountValid(amount, card)
         modifies this, this.card, card
         ensures !IsCardInserted()
