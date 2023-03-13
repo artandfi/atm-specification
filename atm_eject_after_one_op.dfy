@@ -72,6 +72,7 @@ class ATM {
         modifies this
         ensures IsCardInserted()
         ensures this.stored_amount == old(this.stored_amount)
+        ensures this.entered_pin == old(this.entered_pin)
         ensures this.card == card
     {
         this.card := card;
@@ -106,47 +107,64 @@ class ATM {
             this.entered_pin := pin;
         }
         else {
+            print "Error: incorrect PIN";
             EjectCard();
         }
     }
 
     method ChangePIN(new_pin: nat, card: Card)
         requires IsCardInserted()
-        requires 0 <= new_pin <= 9999
         modifies this, this.card, card
         ensures this.stored_amount == old(this.stored_amount)
         ensures this.card == null
-        ensures card.pin == new_pin
+        ensures 0 <= new_pin <= 9999 ==> card.pin == new_pin
         ensures card.balance == old(card.balance)
     {
-        card.pin := new_pin;
+        if 0 <= new_pin <= 9999 {
+            card.pin := new_pin;
+        }
+        else {
+            print "Error: invalid PIN format";
+        }
+        
         EjectCard();
     }
 
     method Withdraw(amount: nat, card: Card)
         requires IsCardInserted()
-        requires IsWithdrawAmountValid(amount, card)
         modifies this, this.card, card
         ensures !IsCardInserted()
-        ensures this.stored_amount == old(this.stored_amount) - amount
+        ensures old(IsWithdrawAmountValid(amount, card)) ==> (
+            && this.stored_amount == old(this.stored_amount) - amount
+            && card.balance == old(card.balance) - amount
+        )
         ensures this.card == null
         ensures card.pin == old(card.pin)
-        ensures card.balance == old(card.balance) - amount
     {
-        this.stored_amount := this.stored_amount - amount;
-        card.balance := card.balance - amount;
+        if IsWithdrawAmountValid(amount, card) {
+            this.stored_amount := this.stored_amount - amount;
+            card.balance := card.balance - amount;
+        }
+        else {
+            print "Error: invalid withdraw amount";
+        }
+
         EjectCard();
     }
 
     method Refill(amount: nat)
         requires !IsCardInserted()
-        requires IsAddedStoredAmountValid(amount)
         modifies this
-        ensures this.stored_amount == old(this.stored_amount) + amount
+        ensures old(IsAddedStoredAmountValid(amount)) ==> this.stored_amount == old(this.stored_amount) + amount
         ensures this.entered_pin == old(this.entered_pin)
         ensures !IsCardInserted()
     {
-        this.stored_amount := this.stored_amount + amount;
+        if IsAddedStoredAmountValid(amount) {
+            this.stored_amount := this.stored_amount + amount;
+        }
+        else {
+            print "Error: invalid refill amount";
+        }
     }
 }
 
